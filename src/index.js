@@ -353,10 +353,57 @@ function tailLogs() {
   });
 }
 
+// Long comments: show the first CLAMP_LINES lines and a "Show more" button for the rest. A comment that is
+// only a little over the limit is left whole. Which comments you opened is remembered while the page lives.
+const CLAMP_LINES = 12;
+const CLAMP_SLACK = 3;
+const opened = new Set();
+
+function setAttr(el, name, value) { if (el.getAttribute(name) !== value) el.setAttribute(name, value); }
+
+function clampLong(root) {
+  const host = root.parentElement;
+  if (!host || !root.closest(".hermes-kanban-comment")) return;
+  let btn = host.querySelector(":scope > .kmd-more");
+  const lineH = parseFloat(getComputedStyle(root).lineHeight);
+  if (!root.clientWidth || !(lineH > 0)) return; // not laid out yet (folded away): try again later
+  const extra = Math.round(root.scrollHeight / lineH - CLAMP_LINES);
+  if (extra < CLAMP_SLACK) {
+    root.removeAttribute("data-kmd-clamp");
+    if (btn) btn.remove();
+    return;
+  }
+  const key = root.getAttribute("data-kmd-hash");
+  const open = opened.has(key);
+  setAttr(root, "data-kmd-clamp", open ? "open" : "closed");
+  if (!btn) {
+    btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "kmd-more";
+    btn.setAttribute("data-testid", "kmd-more");
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const r = host.querySelector(":scope > .kmd-root");
+      const k = r && r.getAttribute("data-kmd-hash");
+      if (!r || k == null) return;
+      const nowOpen = !opened.has(k);
+      if (nowOpen) opened.add(k); else opened.delete(k);
+      r.setAttribute("data-kmd-clamp", nowOpen ? "open" : "closed");
+      schedule();
+      if (!nowOpen) host.scrollIntoView({ block: "nearest" });
+    });
+    root.after(btn);
+  }
+  const label = open ? "Show less" : "Show more (" + extra + " more lines)";
+  if (btn.textContent !== label) btn.textContent = label;
+  setAttr(btn, "aria-expanded", open ? "true" : "false");
+}
+
 let scheduled = false;
 function run() {
   scheduled = false;
   document.querySelectorAll(MD).forEach(upgrade);
+  document.querySelectorAll(".hermes-kanban-comment .kmd-root").forEach(clampLong);
   measureCode(document); // layout can settle after the first render (drawer animation, font load)
   decorateDrawer();
   tailLogs();

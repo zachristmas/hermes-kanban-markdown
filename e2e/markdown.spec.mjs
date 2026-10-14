@@ -169,3 +169,60 @@ test.describe("phone", () => {
     }
   });
 });
+
+// Long comments are clamped. Needs a task with a ~40-line comment ending in END-OF-LONG-COMMENT plus a short
+// "short follow-up comment" (HERMES_LONG_TASK, default: sandbox t_b5ea79f7).
+const LONG_TASK = process.env.HERMES_LONG_TASK || "t_b5ea79f7";
+
+test.describe("long comments", () => {
+  let host;
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/kanban");
+    await page.locator(`[data-task-id="${LONG_TASK}"]`).first().click();
+    host = page.locator(".hermes-kanban-md").filter({ hasText: "END-OF-LONG-COMMENT" });
+    await host.locator('[data-testid="kmd-more"]').waitFor();
+  });
+
+  test("a long comment is clamped with a Show more button, a short one is not", async ({ page }) => {
+    await expect(host.locator('[data-testid="kmd-more"]')).toHaveText(/Show more \(\d+ more lines\)/);
+    const long = host.locator(".kmd-root");
+    await expect(long).toHaveAttribute("data-kmd-clamp", "closed");
+    const h = await long.evaluate((e) => e.getBoundingClientRect().height);
+    const lh = await long.evaluate((e) => parseFloat(getComputedStyle(e).lineHeight));
+    expect(h).toBeLessThanOrEqual(lh * 12 + 2);
+    const short = page.locator(".hermes-kanban-md").filter({ hasText: "short follow-up comment" });
+    await expect(short.locator(".kmd-root")).not.toHaveAttribute("data-kmd-clamp", /.*/);
+    await expect(short.locator('[data-testid="kmd-more"]')).toHaveCount(0);
+  });
+
+  test("Show more reveals everything and Show less folds it back", async ({ page }) => {
+    const more = host.locator('[data-testid="kmd-more"]');
+    await more.click();
+    await expect(more).toHaveText("Show less");
+    await expect(host.locator(".kmd-root")).toHaveAttribute("data-kmd-clamp", "open");
+    await expect(host.getByText("END-OF-LONG-COMMENT")).toBeVisible();
+    await page.waitForTimeout(700); // survives the drawer's periodic re-render
+    await expect(more).toHaveText("Show less");
+    await more.click();
+    await expect(host.locator(".kmd-root")).toHaveAttribute("data-kmd-clamp", "closed");
+    await expect(more).toHaveText(/Show more/);
+  });
+
+  test("works at phone width", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 800 });
+    const more = host.locator('[data-testid="kmd-more"]');
+    await more.scrollIntoViewIfNeeded();
+    await more.click();
+    await expect(more).toHaveText("Show less");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)).toBe(false);
+  });
+});
+
+test("worker log wraps long lines instead of scrolling sideways", async ({ page }) => {
+  await page.goto("/kanban");
+  await page.locator(`[data-task-id="${TASK}"]`).first().click();
+  const log = page.locator('[data-testid="kmd-log"]').first();
+  await log.waitFor();
+  expect(await log.evaluate((e) => getComputedStyle(e).whiteSpace)).toBe("pre-wrap");
+  expect(await log.evaluate((e) => e.scrollWidth <= e.clientWidth + 1)).toBe(true);
+});

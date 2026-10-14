@@ -185,6 +185,10 @@ html[data-kmd-theme="light"] {
   color: var(--kmd-fg) !important;
   max-height: min(24rem, 55dvh);
   padding: 0.65rem 0.75rem;
+  /* Wrap long lines instead of scrolling sideways. */
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere;
+  overflow-x: hidden;
 }
 
 .kmd-log-jump {
@@ -195,3 +199,19 @@ html[data-kmd-theme="light"] {
 }
 .kmd-log-jump:hover { color: var(--kmd-fg); border-color: var(--color-ring); }
 @media (max-width: 640px) { .kmd-log-jump { padding: 0.3rem 0.6rem; font-size: 0.75rem; } }
+
+/* Long comments: clamp to 12 lines (see CLAMP_LINES in index.js) with a fade, and a Show more button. */
+.kmd-root[data-kmd-clamp="closed"] {
+  max-height: calc(12 * 1lh);
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 2.6em), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 2.6em), transparent);
+}
+.kmd-more {
+  display: block; margin-top: 0.3rem;
+  font: inherit; font-size: 0.72rem; font-weight: 500; cursor: pointer; touch-action: manipulation;
+  padding: 0.1rem 0.5rem; color: var(--color-muted-foreground); background: transparent;
+  border: 1px solid var(--color-border); border-radius: var(--radius-sm, 0.25rem);
+}
+.kmd-more:hover { color: var(--kmd-fg); border-color: var(--color-ring); }
+@media (max-width: 640px) { .kmd-more { padding: 0.35rem 0.75rem; font-size: 0.8rem; } }
