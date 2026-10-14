@@ -120,7 +120,7 @@ html[data-kmd-theme="light"] {
    It sits on the drawer's own surface (no background of its own) and only uses theme tokens. */
 .hermes-kanban-drawer > .kmd-nav {
   flex: 0 0 auto; display: flex; align-items: stretch; gap: 0.25rem;
-  padding: 0 0.4rem 0 0.2rem; border-bottom: 1px solid var(--color-border);
+  padding: 0.6rem 0.4rem 0 0.2rem; border-bottom: 1px solid var(--color-border);
 }
 .kmd-nav-scroll {
   flex: 1 1 auto; min-width: 0; display: flex; gap: 0.15rem; overflow-x: auto; overflow-y: hidden;
