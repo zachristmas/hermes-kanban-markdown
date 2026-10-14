@@ -138,4 +138,22 @@ test.describe("phone", () => {
     await chip.tap();
     await expect(page.locator('[data-kmd-section="comments"]')).toBeInViewport();
   });
+  test("folding the last sections at the bottom of the flyout keeps the header under the finger", async ({ page }) => {
+    await page.goto("/kanban");
+    await page.locator('[data-task-id="' + TASK + '"]').first().tap();
+    await page.locator('[data-testid="kmd-nav"]').waitFor();
+    await page.waitForTimeout(900);
+    await page.evaluate(() => { const b = document.querySelector(".hermes-kanban-drawer-body"); b.scrollTop = b.scrollHeight; });
+    const heads = page.locator('[data-testid="kmd-section"] > [data-testid="kmd-section-head"]');
+    const n = await heads.count();
+    for (const i of [n - 1, n - 2]) {
+      const head = heads.nth(i);
+      await head.scrollIntoViewIfNeeded(); // tap would scroll it anyway; measure after that
+      const y0 = (await head.boundingBox()).y;
+      await head.tap();
+      await page.waitForTimeout(250);
+      expect(Math.abs((await head.boundingBox()).y - y0)).toBeLessThan(2);
+      expect(await head.evaluate((e) => e.parentElement.hasAttribute("data-kmd-collapsed"))).toBe(true);
+    }
+  });
 });

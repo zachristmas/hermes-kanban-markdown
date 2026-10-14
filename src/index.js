@@ -136,6 +136,28 @@ function setCollapsed(section, collapsed) {
   if (head) head.setAttribute("aria-expanded", collapsed ? "false" : "true");
 }
 
+// Toggle a section without letting its header jump: collapsing near the end of the list
+// shrinks the scroll height, the browser clamps scrollTop, and everything slides under the finger.
+function toggleKeepingHead(section) {
+  const head = headOf(section);
+  const body = section.closest(".hermes-kanban-drawer-body");
+  const before = head ? head.getBoundingClientRect().top : 0;
+  setCollapsed(section, !section.hasAttribute("data-kmd-collapsed"));
+  if (head && body) {
+    const moved = head.getBoundingClientRect().top - before;
+    if (moved > 0.5) {
+      // The list got shorter than the scroll position allows; pad the end by exactly the shortfall
+      // so the header stays where the finger is. The pad goes away with the drawer.
+      const pad = parseFloat(body.style.getPropertyValue("--kmd-end-pad")) || 0;
+      body.style.setProperty("--kmd-end-pad", pad + moved + "px");
+      body.scrollTop += moved;
+    } else if (moved < -0.5) {
+      body.scrollTop += moved;
+    }
+  }
+  persist(section);
+}
+
 function persist(section) {
   schedule(); // keeps the nav's Collapse all / Expand all label in step
   const key = section.getAttribute("data-kmd-section");
@@ -173,18 +195,14 @@ document.addEventListener("click", (e) => {
   if (!t) return;
   const head = t.closest(".hermes-kanban-drawer .hermes-kanban-section[data-kmd-section] > .hermes-kanban-section-head, .hermes-kanban-drawer .hermes-kanban-section[data-kmd-section] > .hermes-kanban-section-head-row");
   if (!head || t.closest("button, a, select, input, textarea")) return;
-  const section = head.parentElement;
-  setCollapsed(section, !section.hasAttribute("data-kmd-collapsed"));
-  persist(section);
+  toggleKeepingHead(head.parentElement);
 }, true); // capture: the drawer stops click propagation before it reaches document
 document.addEventListener("keydown", (e) => {
   if ((e.key !== "Enter" && e.key !== " ") || !(e.target instanceof Element)) return;
   const head = e.target;
   if (!head.matches(".hermes-kanban-section[data-kmd-section] > [data-testid=kmd-section-head]")) return;
   e.preventDefault();
-  const section = head.parentElement;
-  setCollapsed(section, !section.hasAttribute("data-kmd-collapsed"));
-  persist(section);
+  toggleKeepingHead(head.parentElement);
 }, true);
 
 function allCollapsed(items) { return items.every(({ section }) => section.hasAttribute("data-kmd-collapsed")); }

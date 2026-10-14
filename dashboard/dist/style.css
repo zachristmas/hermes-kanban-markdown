@@ -163,3 +163,8 @@ html[data-kmd-theme="light"] {
   .hermes-kanban-drawer .hermes-kanban-section[data-kmd-section] > .hermes-kanban-section-head,
   .hermes-kanban-drawer .hermes-kanban-section[data-kmd-section] > .hermes-kanban-section-head-row { min-height: 2.4rem; display: flex; align-items: center; }
 }
+
+/* Breathing room after the last section so it can be scrolled clear of the screen edge and the
+   comment bar, and so folding it does not force the list to jump. */
+.hermes-kanban-drawer .hermes-kanban-drawer-body { overflow-anchor: none; }
+.hermes-kanban-drawer .hermes-kanban-drawer-body::after { content: ""; flex: 0 0 calc(3.5rem + var(--kmd-end-pad, 0px)); }
