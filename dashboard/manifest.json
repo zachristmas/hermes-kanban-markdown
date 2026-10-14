@@ -1,0 +1,14 @@
+{
+  "name": "kanban-markdown",
+  "label": "Kanban Markdown",
+  "description": "Full markdown rendering in the kanban task drawer: numbered lists, tables, blockquotes, and code blocks with syntax highlighting and a copy button",
+  "icon": "Package",
+  "version": "1.0.0",
+  "tab": {
+    "path": "/kanban-markdown",
+    "position": "end",
+    "hidden": true
+  },
+  "entry": "dist/index.js",
+  "css": "dist/style.css"
+}
