@@ -23,7 +23,7 @@ The built-in drawer renders markdown with a small regex renderer: no numbered li
 User dashboard plugins must be in `~/.hermes/plugins/` **and** listed in `plugins.enabled` of the active profile.
 
 ```bash
-git clone <this repo> ~/.hermes/plugins/kanban-markdown
+git clone https://github.com/zachristmas/hermes-kanban-markdown.git ~/.hermes/plugins/kanban-markdown
 hermes plugins enable kanban-markdown
 # then restart `hermes dashboard` (plugin discovery is cached per process) and hard-refresh
 ```
