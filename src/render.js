@@ -66,7 +66,8 @@ const marked = new Marked({
       return (
         '<div class="kmd-code" data-testid="kmd-code">' +
         '<div class="kmd-code-head"><span class="kmd-lang" data-testid="kmd-lang">' + escapeHtml(label) + "</span>" +
-        '<button type="button" class="kmd-copy" data-testid="kmd-copy" title="Copy code">Copy</button></div>' +
+        '<span class="kmd-actions"><button type="button" class="kmd-expand" data-testid="kmd-expand" hidden>Expand</button>' +
+        '<button type="button" class="kmd-copy" data-testid="kmd-copy" title="Copy code">Copy</button></span></div>' +
         '<pre><code class="hljs">' + body + "</code></pre></div>"
       );
     },

@@ -40,6 +40,7 @@ function upgrade(el) {
   root.setAttribute("data-testid", "kmd-root");
   root.innerHTML = html;
   el.replaceChildren(root);
+  measureCode(root);
 }
 
 function copyText(text) {
@@ -56,7 +57,25 @@ function copyText(text) {
   });
 }
 
+function measureCode(root) {
+  root.querySelectorAll(".kmd-code").forEach((blk) => {
+    const pre = blk.querySelector("pre");
+    const btn = blk.querySelector(".kmd-expand");
+    if (!pre || !btn || blk.hasAttribute("data-kmd-expanded")) return;
+    btn.hidden = !(pre.scrollHeight > pre.clientHeight + 2);
+  });
+}
+
 document.addEventListener("click", (e) => {
+  const exp = e.target instanceof Element ? e.target.closest(".kmd-expand") : null;
+  if (exp) {
+    e.stopPropagation();
+    const blk = exp.closest(".kmd-code");
+    const open = blk.toggleAttribute("data-kmd-expanded");
+    exp.textContent = open ? "Collapse" : "Expand";
+    if (!open) measureCode(blk.parentElement);
+    return;
+  }
   const btn = e.target instanceof Element ? e.target.closest(".kmd-copy") : null;
   if (!btn) return;
   e.stopPropagation();
@@ -90,10 +109,133 @@ function syncTheme() {
   if (root.getAttribute("data-kmd-theme") !== mode) root.setAttribute("data-kmd-theme", mode);
 }
 
+// --- collapsible sections + section navigator ---------------------------------
+const LS_COLLAPSED = "hermes.kanban.collapsedSections";
+const HEAD_SEL = ":scope > .hermes-kanban-section-head, :scope > .hermes-kanban-section-head-row";
+
+function readCollapsed() {
+  try { const v = JSON.parse(window.localStorage.getItem(LS_COLLAPSED) || "[]"); return new Set(Array.isArray(v) ? v : []); } catch (_e) { return new Set(); }
+}
+function writeCollapsed(set) {
+  try { window.localStorage.setItem(LS_COLLAPSED, JSON.stringify(Array.from(set))); } catch (_e) { /* ignore */ }
+}
+
+function headOf(section) { return section.querySelector(HEAD_SEL); }
+
+function labelOf(head) {
+  const c = head.cloneNode(true);
+  c.querySelectorAll("button, a, select, input").forEach((n) => n.remove());
+  return c.textContent.replace(/\s+/g, " ").trim();
+}
+// Stable key without counts, so "Comments (3)" and "Comments (4)" are one section.
+const keyOf = (label) => label.toLowerCase().replace(/\(.*?\)|\d+/g, "").replace(/\s+/g, " ").trim();
+
+function setCollapsed(section, collapsed) {
+  if (collapsed) section.setAttribute("data-kmd-collapsed", ""); else section.removeAttribute("data-kmd-collapsed");
+  const head = headOf(section);
+  if (head) head.setAttribute("aria-expanded", collapsed ? "false" : "true");
+}
+
+function persist(section) {
+  const key = section.getAttribute("data-kmd-section");
+  if (!key) return;
+  const set = readCollapsed();
+  if (section.hasAttribute("data-kmd-collapsed")) set.add(key); else set.delete(key);
+  writeCollapsed(set);
+}
+
+function decorateSections(body) {
+  const stored = readCollapsed();
+  const items = [];
+  body.querySelectorAll(":scope > .hermes-kanban-section").forEach((section) => {
+    const head = headOf(section);
+    if (!head) return;
+    const label = labelOf(head);
+    const key = keyOf(label);
+    if (!label) return;
+    if (!section.hasAttribute("data-kmd-section")) {
+      section.setAttribute("data-kmd-section", key);
+      section.setAttribute("data-testid", "kmd-section");
+      head.setAttribute("data-testid", "kmd-section-head");
+      head.setAttribute("tabindex", "0");
+      head.setAttribute("title", "Click to collapse or expand");
+      setCollapsed(section, stored.has(key));
+    }
+    if (section.getAttribute("data-kmd-section") !== key) section.setAttribute("data-kmd-section", key);
+    items.push({ section, label, key });
+  });
+  return items;
+}
+
+document.addEventListener("click", (e) => {
+  const t = e.target instanceof Element ? e.target : null;
+  if (!t) return;
+  const head = t.closest(".hermes-kanban-drawer .hermes-kanban-section[data-kmd-section] > .hermes-kanban-section-head, .hermes-kanban-drawer .hermes-kanban-section[data-kmd-section] > .hermes-kanban-section-head-row");
+  if (!head || t.closest("button, a, select, input, textarea")) return;
+  const section = head.parentElement;
+  setCollapsed(section, !section.hasAttribute("data-kmd-collapsed"));
+  persist(section);
+}, true); // capture: the drawer stops click propagation before it reaches document
+document.addEventListener("keydown", (e) => {
+  if ((e.key !== "Enter" && e.key !== " ") || !(e.target instanceof Element)) return;
+  const head = e.target;
+  if (!head.matches(".hermes-kanban-section[data-kmd-section] > [data-testid=kmd-section-head]")) return;
+  e.preventDefault();
+  const section = head.parentElement;
+  setCollapsed(section, !section.hasAttribute("data-kmd-collapsed"));
+  persist(section);
+}, true);
+
+function buildNav(body, items) {
+  const sig = items.map((i) => i.key + "|" + i.label).join("\n");
+  let nav = body.querySelector(":scope > .kmd-nav");
+  if (nav && nav.getAttribute("data-kmd-sig") === sig) return;
+  if (!nav) {
+    nav = document.createElement("div");
+    nav.className = "kmd-nav";
+    nav.setAttribute("data-testid", "kmd-nav");
+    nav.setAttribute("role", "navigation");
+    nav.setAttribute("aria-label", "Task sections");
+    body.insertBefore(nav, body.firstChild);
+  }
+  nav.setAttribute("data-kmd-sig", sig);
+  nav.replaceChildren();
+  items.forEach(({ section, label }) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "kmd-nav-item";
+    b.setAttribute("data-testid", "kmd-nav-item");
+    b.textContent = label.replace(/\s*\(\d+\)\s*$/, "") + (/\((\d+)\)\s*$/.test(label) ? " " + label.match(/\((\d+)\)\s*$/)[1] : "");
+    b.addEventListener("click", () => {
+      if (section.hasAttribute("data-kmd-collapsed")) { setCollapsed(section, false); persist(section); }
+      section.scrollIntoView({ block: "start", behavior: "smooth" });
+    });
+    nav.appendChild(b);
+  });
+  const all = (collapse) => () => {
+    items.forEach(({ section }) => { setCollapsed(section, collapse); persist(section); });
+  };
+  const mk = (text, testid, title, fn) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "kmd-nav-tool"; b.textContent = text; b.title = title;
+    b.setAttribute("data-testid", testid); b.addEventListener("click", fn); return b;
+  };
+  nav.appendChild(mk("Collapse all", "kmd-collapse-all", "Collapse every section", all(true)));
+  nav.appendChild(mk("Expand all", "kmd-expand-all", "Expand every section", all(false)));
+}
+
+function decorateDrawer() {
+  document.querySelectorAll(".hermes-kanban-drawer .hermes-kanban-drawer-body").forEach((body) => {
+    const items = decorateSections(body);
+    if (items.length > 1) buildNav(body, items);
+  });
+}
+
 let scheduled = false;
 function run() {
   scheduled = false;
   document.querySelectorAll(MD).forEach(upgrade);
+  decorateDrawer();
   syncTheme();
 }
 function schedule() {

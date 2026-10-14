@@ -18,7 +18,7 @@ test("numbered list, blockquote and table are rendered", async ({ page }) => {
 });
 
 test("code block has language label, highlighting, and preserved indentation", async ({ page }) => {
-  const block = page.locator('[data-testid="kmd-code"]').first();
+  const block = page.locator('[data-testid="kmd-code"]').filter({ has: page.locator('[data-testid="kmd-lang"]', { hasText: /^json$/ }) }).first();
   await expect(block.locator('[data-testid="kmd-lang"]')).toHaveText("json");
   await expect(block.locator('[class*="hljs-"]').first()).toBeVisible();
   const text = await block.locator("pre code").innerText();
@@ -28,7 +28,7 @@ test("code block has language label, highlighting, and preserved indentation", a
 });
 
 test("copy button copies the code text", async ({ page }) => {
-  const block = page.locator('[data-testid="kmd-code"]').first();
+  const block = page.locator('[data-testid="kmd-code"]').filter({ has: page.locator('[data-testid="kmd-lang"]', { hasText: /^json$/ }) }).first();
   const expected = await block.locator("pre code").innerText();
   await block.locator('[data-testid="kmd-copy"]').click();
   await expect(block.locator('[data-testid="kmd-copy"]')).toHaveText("Copied");
@@ -50,4 +50,59 @@ test("sections are visually separated cards", async ({ page }) => {
 test("a re-render by the dashboard is upgraded again", async ({ page }) => {
   await page.locator(".hermes-kanban-md").first().evaluate((e) => { e.innerHTML = "<p>reset by app</p>"; });
   await expect(page.locator('[data-testid="kmd-root"]').first()).toBeVisible();
+});
+
+// Needs a comment containing a fenced block longer than the max height (60+ lines).
+test("tall code blocks are height-capped, scroll, and can be expanded", async ({ page }) => {
+  const tall = page.locator('[data-testid="kmd-code"]').filter({ hasText: "value_59" }).first();
+  const pre = tall.locator("pre");
+  const before = await pre.evaluate((e) => e.clientHeight);
+  expect(before).toBeLessThan(420);
+  expect(await pre.evaluate((e) => e.scrollHeight > e.clientHeight)).toBe(true);
+  const btn = tall.locator('[data-testid="kmd-expand"]');
+  await expect(btn).toBeVisible();
+  await btn.click();
+  await expect(btn).toHaveText("Collapse");
+  expect(await pre.evaluate((e) => e.clientHeight)).toBeGreaterThan(before);
+  await btn.click();
+  expect(await pre.evaluate((e) => e.clientHeight)).toBe(before);
+  // short blocks never show the button
+  const short = page.locator('[data-testid="kmd-code"]').filter({ hasNotText: "value_59" }).first();
+  await expect(short.locator('[data-testid="kmd-expand"]')).toBeHidden();
+});
+
+test("clicking a section header collapses it and the choice survives a reload", async ({ page }) => {
+  const sec = page.locator('[data-testid="kmd-section"][data-kmd-section="attachments"]');
+  const body = sec.locator(".hermes-kanban-attachment-link").first();
+  await expect(body).toBeVisible();
+  await sec.locator('[data-testid="kmd-section-head"]').click();
+  await expect(sec).toHaveAttribute("data-kmd-collapsed", "");
+  await expect(body).toBeHidden();
+  await page.reload();
+  await page.locator(`[data-task-id="${TASK}"]`).first().click();
+  await expect(page.locator('[data-kmd-section="attachments"]')).toHaveAttribute("data-kmd-collapsed", "");
+  await page.locator('[data-kmd-section="attachments"] [data-testid="kmd-section-head"]').click();
+  await expect(page.locator('[data-kmd-section="attachments"]')).not.toHaveAttribute("data-kmd-collapsed", "");
+});
+
+test("buttons inside a section header don't toggle it", async ({ page }) => {
+  const toggle = page.locator('[data-testid="kmd-section"][data-kmd-section="comments"] [data-testid="kco-toggle"]');
+  if (!(await toggle.count())) test.skip(true, "comment-order plugin not installed");
+  await toggle.click();
+  await expect(page.locator('[data-kmd-section="comments"]')).not.toHaveAttribute("data-kmd-collapsed", "");
+  await toggle.click(); // restore
+});
+
+test("section navigator jumps to a section, opens it if collapsed, and has collapse/expand all", async ({ page }) => {
+  const nav = page.locator('[data-testid="kmd-nav"]');
+  await expect(nav).toBeVisible();
+  await nav.locator('[data-testid="kmd-collapse-all"]').click();
+  expect(await page.locator('[data-testid="kmd-section"][data-kmd-collapsed]').count()).toBe(await page.locator('[data-testid="kmd-section"]').count());
+  const item = nav.locator('[data-testid="kmd-nav-item"]', { hasText: /^comments/i });
+  await item.click();
+  const comments = page.locator('[data-kmd-section="comments"]');
+  await expect(comments).not.toHaveAttribute("data-kmd-collapsed", "");
+  await expect(comments).toBeInViewport();
+  await nav.locator('[data-testid="kmd-expand-all"]').click();
+  expect(await page.locator('[data-testid="kmd-section"][data-kmd-collapsed]').count()).toBe(0);
 });

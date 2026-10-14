@@ -91,3 +91,42 @@ html[data-kmd-theme="light"] {
   padding-bottom: 0.5rem;
   border-bottom: 1px dashed var(--color-border);
 }
+
+/* Code blocks: reasonable max height with scroll; "Expand" shows up only when clipped. */
+.hermes-kanban .hermes-kanban-md .kmd-code pre { max-height: 22rem; overflow: auto; }
+.hermes-kanban .hermes-kanban-md .kmd-code[data-kmd-expanded] pre { max-height: none; }
+.kmd-actions { display: inline-flex; gap: 0.35rem; align-items: center; }
+.kmd-expand { font: inherit; font-size: 0.72em; padding: 0.1em 0.55em; border-radius: 4px; cursor: pointer; background: transparent; color: var(--kmd-code-fg); border: 1px solid var(--kmd-code-border); }
+.kmd-expand[hidden] { display: none; }
+.kmd-expand:hover { border-color: var(--color-ring); }
+
+/* Collapsible sections: click a header; a chevron (pseudo-element, so React re-renders can't drop it). */
+.hermes-kanban-drawer .hermes-kanban-section[data-kmd-section] > .hermes-kanban-section-head,
+.hermes-kanban-drawer .hermes-kanban-section[data-kmd-section] > .hermes-kanban-section-head-row { cursor: pointer; user-select: none; }
+.hermes-kanban-drawer .hermes-kanban-section[data-kmd-section] > .hermes-kanban-section-head::before,
+.hermes-kanban-drawer .hermes-kanban-section[data-kmd-section] > .hermes-kanban-section-head-row::before {
+  content: "▾"; display: inline-block; width: 1.1em; margin-right: 0.15em; color: var(--color-muted-foreground);
+}
+.hermes-kanban-drawer .hermes-kanban-section[data-kmd-section] > .hermes-kanban-section-head-row { justify-content: flex-start; }
+.hermes-kanban-drawer .hermes-kanban-section[data-kmd-section] > .hermes-kanban-section-head-row > :last-child { margin-left: auto; }
+.hermes-kanban-drawer .hermes-kanban-section[data-kmd-collapsed] > .hermes-kanban-section-head::before,
+.hermes-kanban-drawer .hermes-kanban-section[data-kmd-collapsed] > .hermes-kanban-section-head-row::before { content: "▸"; }
+.hermes-kanban-drawer .hermes-kanban-section[data-kmd-collapsed] > :not(.hermes-kanban-section-head):not(.hermes-kanban-section-head-row) { display: none !important; }
+.hermes-kanban-drawer .hermes-kanban-section[data-kmd-collapsed] { padding-bottom: 0 !important; }
+.hermes-kanban-drawer .hermes-kanban-section[data-kmd-collapsed] > .hermes-kanban-section-head,
+.hermes-kanban-drawer .hermes-kanban-section[data-kmd-collapsed] > .hermes-kanban-section-head-row { border-bottom-color: transparent !important; border-radius: 8px !important; }
+.hermes-kanban-drawer .hermes-kanban-drawer-body > .hermes-kanban-section { scroll-margin-top: 5.5rem; }
+
+/* Section navigator: sticky chip bar at the top of the drawer body. */
+.kmd-nav {
+  position: sticky; top: -0.9rem; z-index: 5; margin: -0.9rem -0.9rem 0; padding: 0.5rem 0.9rem;
+  display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; flex: 0 0 auto;
+  background: var(--color-background, #111); border-bottom: 1px solid var(--color-border);
+}
+.kmd-nav-item, .kmd-nav-tool {
+  font: inherit; font-size: 0.72rem; white-space: nowrap; padding: 0.15rem 0.6rem; border-radius: 999px; cursor: pointer;
+  color: var(--color-foreground); background: transparent; border: 1px solid var(--color-border);
+}
+.kmd-nav-item:hover, .kmd-nav-tool:hover { border-color: var(--color-ring); }
+.kmd-nav-tool { border-radius: 4px; color: var(--color-muted-foreground); }
+.kmd-nav-tool[data-testid="kmd-collapse-all"] { margin-left: auto; }
