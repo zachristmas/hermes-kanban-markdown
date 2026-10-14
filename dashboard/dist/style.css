@@ -133,7 +133,7 @@ html[data-kmd-theme="light"] {
 .kmd-nav-item {
   position: relative; flex: 0 0 auto; display: inline-flex; align-items: center; gap: 0.4rem;
   font: inherit; font-size: 0.8rem; font-weight: 500; letter-spacing: 0.01em; white-space: nowrap;
-  padding: 0.7rem 0.6rem; margin: 0; background: transparent; border: 0; border-radius: 0; cursor: pointer;
+  padding: 0.6rem 0.6rem 0.4rem; margin: 0; background: transparent; border: 0; border-radius: 0; cursor: pointer;
   color: var(--color-muted-foreground); touch-action: manipulation; transition: color 120ms ease;
 }
 .kmd-nav-item::after {
@@ -157,7 +157,7 @@ html[data-kmd-theme="light"] {
 .kmd-nav-tool:hover { color: var(--color-foreground); background: color-mix(in srgb, var(--color-foreground) 8%, transparent); }
 .hermes-kanban-drawer .hermes-kanban-drawer-body > .hermes-kanban-section { scroll-margin-top: 0.4rem; }
 @media (max-width: 640px) {
-  .kmd-nav-item { padding: 0.85rem 0.65rem; font-size: 0.85rem; }
+  .kmd-nav-item { padding: 0.75rem 0.65rem 0.55rem; font-size: 0.85rem; }
   .kmd-nav-tool { width: 2.6rem; height: 2.6rem; }
   /* larger tap target for folding on touch */
   .hermes-kanban-drawer .hermes-kanban-section[data-kmd-section] > .hermes-kanban-section-head,
