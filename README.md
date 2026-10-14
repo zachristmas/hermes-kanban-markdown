@@ -43,6 +43,7 @@ On a phone the tab row swipes sideways, keeps the current tab in view, and uses 
 - Each drawer section (Description, Dependencies, Attachments, Result, Comments, ...) is a bordered card with its own header band, and comments are divided from each other.
 - Code blocks are capped at a reasonable height (22rem) and scroll; an **Expand** button appears only on blocks that are actually clipped.
 - Click a section header to collapse or expand it (remembered per browser). A tab row under the drawer header has one tab per section that jumps straight to it (opening it if collapsed), underlines the section you're in, and ends with a single **Collapse all / Expand all** button. It stays one swipeable row on phones, with touch-sized targets.
+- The **Worker log** is a dark (or, on light themes, slightly grayed) well derived from the theme's own background so it stands apart from the card, it opens scrolled to the latest line (and again after **refresh**), and the header has **↑ top** and **↓ end** buttons.
 - Safe by construction: raw HTML in task text is shown as literal text, only http, https and mailto links are active, and images are shown as links (never fetched automatically).
 - If the markdown source can't be read, the built-in rendering is left untouched.
 

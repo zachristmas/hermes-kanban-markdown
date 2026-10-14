@@ -1,3 +1,7 @@
+/* The dashboard theme exposes --background (Tailwind's --color-background / --color-foreground are not real custom
+   properties, and --foreground is fully transparent), so alias real ones once here. */
+:root { --kmd-fg: var(--color-card-foreground, currentColor); --kmd-bg: var(--background, Canvas); }
+
 /* JetBrains Mono (OFL-1.1) is embedded so code never needs a network request. */
 @font-face { font-family: "KMD Mono"; font-weight: 400; font-style: normal; font-display: swap; src: url("__FONT_400__") format("woff2"); }
 @font-face { font-family: "KMD Mono"; font-weight: 700; font-style: normal; font-display: swap; src: url("__FONT_700__") format("woff2"); }
@@ -71,7 +75,7 @@ html[data-kmd-theme="light"] {
   padding: 0 0.8rem 0.75rem;
   border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--color-foreground) 3%, transparent);
+  background: color-mix(in srgb, var(--kmd-fg) 3%, transparent);
 }
 .hermes-kanban-drawer .hermes-kanban-drawer-body > .hermes-kanban-section > .hermes-kanban-section-head,
 .hermes-kanban-drawer .hermes-kanban-drawer-body > .hermes-kanban-section > .hermes-kanban-section-head-row {
@@ -79,7 +83,7 @@ html[data-kmd-theme="light"] {
   padding: 0.45rem 0.8rem;
   border-bottom: 1px solid var(--color-border);
   border-radius: 8px 8px 0 0;
-  background: color-mix(in srgb, var(--color-foreground) 6%, transparent);
+  background: color-mix(in srgb, var(--kmd-fg) 6%, transparent);
   text-transform: uppercase;
   font-size: 0.7rem;
   font-weight: 700;
@@ -140,21 +144,21 @@ html[data-kmd-theme="light"] {
   content: ""; position: absolute; left: 0.6rem; right: 0.6rem; bottom: -1px; height: 2px; border-radius: 2px 2px 0 0;
   background: var(--color-primary, currentColor); transform: scaleX(0); transition: transform 160ms ease;
 }
-.kmd-nav-item:hover { color: var(--color-foreground); }
-.kmd-nav-item[aria-current] { color: var(--color-foreground); font-weight: 600; }
+.kmd-nav-item:hover { color: var(--kmd-fg); }
+.kmd-nav-item[aria-current] { color: var(--kmd-fg); font-weight: 600; }
 .kmd-nav-item[aria-current]::after { transform: scaleX(1); }
 .kmd-nav-item:focus-visible, .kmd-nav-tool:focus-visible { outline: 2px solid var(--color-ring); outline-offset: -2px; border-radius: 4px; }
 .kmd-nav-count {
   font-size: 0.68rem; font-weight: 600; line-height: 1; padding: 0.2rem 0.4rem; border-radius: 999px;
   color: var(--color-muted-foreground);
-  background: color-mix(in srgb, var(--color-foreground) 10%, transparent);
+  background: color-mix(in srgb, var(--kmd-fg) 10%, transparent);
 }
 .kmd-nav-tool {
   flex: 0 0 auto; align-self: center; display: inline-flex; align-items: center; justify-content: center;
   width: 2.25rem; height: 2.25rem; padding: 0; background: transparent; border: 0; border-radius: 8px; cursor: pointer;
   color: var(--color-muted-foreground); touch-action: manipulation;
 }
-.kmd-nav-tool:hover { color: var(--color-foreground); background: color-mix(in srgb, var(--color-foreground) 8%, transparent); }
+.kmd-nav-tool:hover { color: var(--kmd-fg); background: color-mix(in srgb, var(--kmd-fg) 8%, transparent); }
 .hermes-kanban-drawer .hermes-kanban-drawer-body > .hermes-kanban-section { scroll-margin-top: 0.4rem; }
 @media (max-width: 640px) {
   .kmd-nav-item { padding: 0.75rem 0.65rem 0.55rem; font-size: 0.85rem; }
@@ -168,3 +172,26 @@ html[data-kmd-theme="light"] {
    comment bar, and so folding it does not force the list to jump. */
 .hermes-kanban-drawer .hermes-kanban-drawer-body { overflow-anchor: none; }
 .hermes-kanban-drawer .hermes-kanban-drawer-body::after { content: ""; flex: 0 0 calc(3.5rem + var(--kmd-end-pad, 0px)); }
+
+/* Worker log: a terminal-like well that stands apart from the card. The colour is the theme's own
+   background nudged in lightness, so it follows every theme (darker on dark themes, a touch grayer
+   on light ones) instead of using a fixed colour. */
+.hermes-kanban-drawer .hermes-kanban-log {
+  /* Hermes forces every <pre> in the drawer transparent with !important, so this has to as well. */
+  background: color-mix(in srgb, var(--kmd-bg) 78%, black) !important;
+  background: oklch(from var(--kmd-bg) calc(l - 0.07) c h) !important;
+  border-color: color-mix(in srgb, var(--kmd-fg) 18%, var(--color-border));
+  box-shadow: inset 0 1px 6px rgba(0, 0, 0, 0.25);
+  color: var(--kmd-fg) !important;
+  max-height: min(24rem, 55dvh);
+  padding: 0.65rem 0.75rem;
+}
+
+.kmd-log-jump {
+  font: inherit; font-size: 0.68rem; font-weight: 500; letter-spacing: 0; text-transform: none;
+  padding: 0.1rem 0.45rem; margin-right: 0.35rem; cursor: pointer; touch-action: manipulation;
+  color: var(--color-muted-foreground); background: transparent;
+  border: 1px solid var(--color-border); border-radius: var(--radius-sm, 0.25rem);
+}
+.kmd-log-jump:hover { color: var(--kmd-fg); border-color: var(--color-ring); }
+@media (max-width: 640px) { .kmd-log-jump { padding: 0.3rem 0.6rem; font-size: 0.75rem; } }

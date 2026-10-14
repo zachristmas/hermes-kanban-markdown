@@ -122,6 +122,18 @@ test("navigator is a single compact row and highlights the current section", asy
   await expect(nav.locator('[data-kmd-for="comments"]')).toHaveAttribute("aria-current", "true", { timeout: 4000 });
 });
 
+test("worker log opens at its latest line and has top / end buttons", async ({ page }) => {
+  const log = page.locator('[data-testid="kmd-log"]');
+  test.skip(!(await log.count()), "task has no worker log");
+  const pos = () => log.evaluate((e) => ({ top: e.scrollTop, max: e.scrollHeight - e.clientHeight }));
+  await expect.poll(async () => { const p = await pos(); return p.max > 0 && p.top >= p.max - 1; }).toBe(true);
+  expect(await log.evaluate((e) => getComputedStyle(e).backgroundColor)).not.toBe("rgba(0, 0, 0, 0)");
+  await page.locator('[data-testid="kmd-log-top"]').click();
+  await expect.poll(async () => (await pos()).top).toBeLessThan(2);
+  await page.locator('[data-testid="kmd-log-bottom"]').click();
+  await expect.poll(async () => { const p = await pos(); return p.top >= p.max - 1; }).toBe(true);
+});
+
 test.describe("phone", () => {
   test.use({ viewport: { width: 390, height: 780 }, hasTouch: true, isMobile: true });
   test("nav stays one short row, scrolls sideways, and tapping a chip reaches the section", async ({ page }) => {
@@ -150,7 +162,7 @@ test.describe("phone", () => {
       const head = heads.nth(i);
       await head.scrollIntoViewIfNeeded(); // tap would scroll it anyway; measure after that
       const y0 = (await head.boundingBox()).y;
-      await head.tap();
+      await head.tap({ position: { x: 24, y: 12 } }); // the title side; the right side holds buttons
       await page.waitForTimeout(250);
       expect(Math.abs((await head.boundingBox()).y - y0)).toBeLessThan(2);
       expect(await head.evaluate((e) => e.parentElement.hasAttribute("data-kmd-collapsed"))).toBe(true);

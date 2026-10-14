@@ -319,12 +319,47 @@ function decorateDrawer() {
   });
 }
 
+// Show the end of the worker log (the newest lines) when it first appears and whenever its text
+// changes (Refresh). Scrolling afterwards is left to the user.
+function addLogJumps(pre) {
+  const section = pre.closest(".hermes-kanban-section");
+  const row = section && section.querySelector(":scope > .hermes-kanban-section-head-row");
+  if (!row || row.querySelector(".kmd-log-jump")) return; // React may rewrite the row; this re-adds them
+  const mk = (label, title, id, to) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "kmd-log-jump"; b.textContent = label; b.title = title;
+    b.setAttribute("data-testid", id);
+    b.addEventListener("click", () => {
+      const log = section.querySelector(".hermes-kanban-log");
+      if (log) log.scrollTo({ top: to === "top" ? 0 : log.scrollHeight, behavior: "smooth" });
+    });
+    return b;
+  };
+  const refresh = row.querySelector("button");
+  const top = mk("↑ top", "Scroll the log to the start", "kmd-log-top", "top");
+  const bottom = mk("↓ end", "Scroll the log to the latest line", "kmd-log-bottom", "bottom");
+  if (refresh) { refresh.before(top, bottom); } else { row.append(top, bottom); }
+}
+
+function tailLogs() {
+  document.querySelectorAll(".hermes-kanban-drawer .hermes-kanban-log").forEach((pre) => {
+    addLogJumps(pre);
+    if (!pre.clientHeight) return; // folded away: try again once it is visible
+    const key = String(pre.textContent.length);
+    if (pre.getAttribute("data-kmd-tail") === key) return;
+    pre.setAttribute("data-kmd-tail", key);
+    pre.setAttribute("data-testid", "kmd-log");
+    pre.scrollTop = pre.scrollHeight;
+  });
+}
+
 let scheduled = false;
 function run() {
   scheduled = false;
   document.querySelectorAll(MD).forEach(upgrade);
   measureCode(document); // layout can settle after the first render (drawer animation, font load)
   decorateDrawer();
+  tailLogs();
   syncTheme();
 }
 function schedule() {

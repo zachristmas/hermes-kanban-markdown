@@ -1,5 +1,5 @@
 name: kanban-markdown
-version: "1.3.0"
+version: "1.4.0"
 description: "Full markdown rendering and clearer section separation in the kanban task drawer."
 author: Zach Christmas
 # Dashboard-only plugin: all behavior lives in dashboard/. No agent tools or hooks.
