@@ -93,16 +93,46 @@ test("buttons inside a section header don't toggle it", async ({ page }) => {
   await toggle.click(); // restore
 });
 
-test("section navigator jumps to a section, opens it if collapsed, and has collapse/expand all", async ({ page }) => {
+test("section navigator jumps to a section, opens it if collapsed, and toggles all", async ({ page }) => {
   const nav = page.locator('[data-testid="kmd-nav"]');
   await expect(nav).toBeVisible();
-  await nav.locator('[data-testid="kmd-collapse-all"]').click();
+  const all = nav.locator('[data-testid="kmd-toggle-all"]');
+  await expect(all).toHaveText("Collapse all");
+  await all.click();
+  await expect(all).toHaveText("Expand all");
   expect(await page.locator('[data-testid="kmd-section"][data-kmd-collapsed]').count()).toBe(await page.locator('[data-testid="kmd-section"]').count());
-  const item = nav.locator('[data-testid="kmd-nav-item"]', { hasText: /^comments/i });
-  await item.click();
+  await nav.locator('[data-testid="kmd-nav-item"]', { hasText: /^comments/i }).click();
   const comments = page.locator('[data-kmd-section="comments"]');
   await expect(comments).not.toHaveAttribute("data-kmd-collapsed", "");
   await expect(comments).toBeInViewport();
-  await nav.locator('[data-testid="kmd-expand-all"]').click();
+  await expect(all).toHaveText("Collapse all"); // no longer all collapsed
+  await all.click(); await all.click();
   expect(await page.locator('[data-testid="kmd-section"][data-kmd-collapsed]').count()).toBe(0);
+});
+
+test("navigator is a single compact row and highlights the current section", async ({ page }) => {
+  const nav = page.locator('[data-testid="kmd-nav"]');
+  const h = await nav.evaluate((e) => e.getBoundingClientRect().height);
+  expect(h).toBeLessThan(64); // one row, not a wrapped block
+  await nav.locator('[data-testid="kmd-nav-item"]', { hasText: /^comments/i }).click();
+  await expect(nav.locator('[data-kmd-for="comments"]')).toHaveAttribute("aria-current", "true", { timeout: 4000 });
+});
+
+test.describe("phone", () => {
+  test.use({ viewport: { width: 390, height: 780 }, hasTouch: true, isMobile: true });
+  test("nav stays one short row, scrolls sideways, and tapping a chip reaches the section", async ({ page }) => {
+    await page.goto("/kanban");
+    await page.locator('[data-task-id="' + TASK + '"]').first().tap();
+    const nav = page.locator('[data-testid="kmd-nav"]');
+    await nav.waitFor();
+    const box = await nav.evaluate((e) => ({ h: e.getBoundingClientRect().height, sw: e.scrollWidth, cw: e.clientWidth }));
+    expect(box.h).toBeLessThan(64);
+    expect(box.sw).toBeGreaterThan(box.cw); // overflows horizontally instead of wrapping
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+    const chip = nav.locator('[data-testid="kmd-nav-item"]', { hasText: /^comments/i });
+    expect((await chip.boundingBox()).height).toBeGreaterThanOrEqual(36); // touch-sized
+    await chip.scrollIntoViewIfNeeded();
+    await chip.tap();
+    await expect(page.locator('[data-kmd-section="comments"]')).toBeInViewport();
+  });
 });

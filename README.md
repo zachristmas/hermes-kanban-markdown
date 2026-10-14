@@ -36,7 +36,7 @@ Click any section header to fold it (remembered per browser). The bar at the top
 - Palette follows the active dashboard theme (dark or light is detected from the real background).
 - Each drawer section (Description, Dependencies, Attachments, Result, Comments, ...) is a bordered card with its own header band, and comments are divided from each other.
 - Code blocks are capped at a reasonable height (22rem) and scroll; an **Expand** button appears only on blocks that are actually clipped.
-- Click a section header to collapse or expand it (remembered per browser). A sticky bar at the top of the drawer has a chip per section that jumps straight to it (opening it if collapsed), plus **Collapse all / Expand all**.
+- Click a section header to collapse or expand it (remembered per browser). A sticky bar at the top of the drawer has a chip per section that jumps straight to it (opening it if collapsed), highlights the section you're currently in, and ends with a single **Collapse all / Expand all** toggle. It stays one compact, swipeable row on phones, with touch-sized targets.
 - Safe by construction: raw HTML in task text is shown as literal text, only http, https and mailto links are active, and images are shown as links (never fetched automatically).
 - If the markdown source can't be read, the built-in rendering is left untouched.
 

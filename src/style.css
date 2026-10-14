@@ -115,18 +115,29 @@ html[data-kmd-theme="light"] {
 .hermes-kanban-drawer .hermes-kanban-section[data-kmd-collapsed] { padding-bottom: 0 !important; }
 .hermes-kanban-drawer .hermes-kanban-section[data-kmd-collapsed] > .hermes-kanban-section-head,
 .hermes-kanban-drawer .hermes-kanban-section[data-kmd-collapsed] > .hermes-kanban-section-head-row { border-bottom-color: transparent !important; border-radius: 8px !important; }
-.hermes-kanban-drawer .hermes-kanban-drawer-body > .hermes-kanban-section { scroll-margin-top: 5.5rem; }
 
-/* Section navigator: sticky chip bar at the top of the drawer body. */
+/* Section navigator: one sticky, horizontally scrollable row (compact on phones). */
 .kmd-nav {
-  position: sticky; top: -0.9rem; z-index: 5; margin: -0.9rem -0.9rem 0; padding: 0.5rem 0.9rem;
-  display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; flex: 0 0 auto;
+  position: sticky; top: -0.9rem; z-index: 5; margin: -0.9rem -0.9rem 0; padding: 0.45rem 0.9rem;
+  display: flex; flex-wrap: nowrap; gap: 0.4rem; align-items: center; flex: 0 0 auto;
+  overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain; scroll-snap-type: x proximity;
   background: var(--color-background, #111); border-bottom: 1px solid var(--color-border);
 }
+.kmd-nav::-webkit-scrollbar { display: none; }
 .kmd-nav-item, .kmd-nav-tool {
-  font: inherit; font-size: 0.72rem; white-space: nowrap; padding: 0.15rem 0.6rem; border-radius: 999px; cursor: pointer;
+  flex: 0 0 auto; scroll-snap-align: start; font: inherit; font-size: 0.74rem; white-space: nowrap;
+  min-height: 2rem; padding: 0.2rem 0.75rem; border-radius: 999px; cursor: pointer; touch-action: manipulation;
   color: var(--color-foreground); background: transparent; border: 1px solid var(--color-border);
 }
 .kmd-nav-item:hover, .kmd-nav-tool:hover { border-color: var(--color-ring); }
-.kmd-nav-tool { border-radius: 4px; color: var(--color-muted-foreground); }
-.kmd-nav-tool[data-testid="kmd-collapse-all"] { margin-left: auto; }
+.kmd-nav-item[aria-current] { border-color: var(--color-ring); background: color-mix(in srgb, var(--color-foreground) 12%, transparent); font-weight: 600; }
+.kmd-nav-tool { border-radius: 4px; color: var(--color-muted-foreground); margin-left: 0.25rem; }
+.hermes-kanban-drawer .hermes-kanban-drawer-body > .hermes-kanban-section { scroll-margin-top: 3.4rem; }
+@media (max-width: 640px) {
+  .kmd-nav { padding: 0.4rem 0.9rem; }
+  .kmd-nav-item, .kmd-nav-tool { min-height: 2.6rem; font-size: 0.8rem; }
+  /* larger tap target for folding on touch */
+  .hermes-kanban-drawer .hermes-kanban-section[data-kmd-section] > .hermes-kanban-section-head,
+  .hermes-kanban-drawer .hermes-kanban-section[data-kmd-section] > .hermes-kanban-section-head-row { min-height: 2.4rem; display: flex; align-items: center; }
+}

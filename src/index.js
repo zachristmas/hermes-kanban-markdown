@@ -137,6 +137,7 @@ function setCollapsed(section, collapsed) {
 }
 
 function persist(section) {
+  schedule(); // keeps the nav's Collapse all / Expand all label in step
   const key = section.getAttribute("data-kmd-section");
   if (!key) return;
   const set = readCollapsed();
@@ -186,42 +187,86 @@ document.addEventListener("keydown", (e) => {
   persist(section);
 }, true);
 
+function allCollapsed(items) { return items.every(({ section }) => section.hasAttribute("data-kmd-collapsed")); }
+
+function syncToggleAll(nav, items) {
+  const btn = nav.querySelector('[data-testid="kmd-toggle-all"]');
+  if (!btn) return;
+  const collapsed = allCollapsed(items);
+  const label = collapsed ? "Expand all" : "Collapse all";
+  if (btn.textContent !== label) btn.textContent = label;
+  btn.title = collapsed ? "Expand every section" : "Collapse every section";
+}
+
 function buildNav(body, items) {
   const sig = items.map((i) => i.key + "|" + i.label).join("\n");
   let nav = body.querySelector(":scope > .kmd-nav");
-  if (nav && nav.getAttribute("data-kmd-sig") === sig) return;
-  if (!nav) {
-    nav = document.createElement("div");
-    nav.className = "kmd-nav";
-    nav.setAttribute("data-testid", "kmd-nav");
-    nav.setAttribute("role", "navigation");
-    nav.setAttribute("aria-label", "Task sections");
-    body.insertBefore(nav, body.firstChild);
-  }
-  nav.setAttribute("data-kmd-sig", sig);
-  nav.replaceChildren();
-  items.forEach(({ section, label }) => {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "kmd-nav-item";
-    b.setAttribute("data-testid", "kmd-nav-item");
-    b.textContent = label.replace(/\s*\(\d+\)\s*$/, "") + (/\((\d+)\)\s*$/.test(label) ? " " + label.match(/\((\d+)\)\s*$/)[1] : "");
-    b.addEventListener("click", () => {
-      if (section.hasAttribute("data-kmd-collapsed")) { setCollapsed(section, false); persist(section); }
-      section.scrollIntoView({ block: "start", behavior: "smooth" });
+  if (!nav || nav.getAttribute("data-kmd-sig") !== sig) {
+    if (!nav) {
+      nav = document.createElement("div");
+      nav.className = "kmd-nav";
+      nav.setAttribute("data-testid", "kmd-nav");
+      nav.setAttribute("role", "navigation");
+      nav.setAttribute("aria-label", "Task sections");
+      body.insertBefore(nav, body.firstChild);
+    }
+    nav.setAttribute("data-kmd-sig", sig);
+    nav.replaceChildren();
+    items.forEach(({ section, label, key }) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "kmd-nav-item";
+      b.setAttribute("data-testid", "kmd-nav-item");
+      b.setAttribute("data-kmd-for", key);
+      const m = label.match(/\((\d+)\)\s*$/);
+      b.textContent = label.replace(/\s*\(.*\)\s*$/, "") + (m ? " " + m[1] : "");
+      b.addEventListener("click", () => {
+        if (section.hasAttribute("data-kmd-collapsed")) { setCollapsed(section, false); persist(section); }
+        section.scrollIntoView({ block: "start", behavior: "smooth" });
+      });
+      nav.appendChild(b);
     });
-    nav.appendChild(b);
+    const all = document.createElement("button");
+    all.type = "button"; all.className = "kmd-nav-tool"; all.setAttribute("data-testid", "kmd-toggle-all");
+    all.addEventListener("click", () => {
+      const live = decorateSections(body);
+      const collapse = !allCollapsed(live);
+      live.forEach(({ section }) => { setCollapsed(section, collapse); persist(section); });
+      syncToggleAll(nav, live);
+    });
+    nav.appendChild(all);
+  }
+  syncToggleAll(nav, items);
+  if (!body.hasAttribute("data-kmd-spy")) {
+    body.setAttribute("data-kmd-spy", "");
+    let raf = 0;
+    body.addEventListener("scroll", () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => { raf = 0; spy(body); });
+    }, { passive: true });
+  }
+  spy(body);
+}
+
+// Highlight the nav chip for the section currently at the top of the drawer and keep it in view.
+function spy(body) {
+  const nav = body.querySelector(":scope > .kmd-nav");
+  if (!nav) return;
+  const line = body.getBoundingClientRect().top + nav.offsetHeight + 24;
+  let current = null;
+  body.querySelectorAll(":scope > .hermes-kanban-section[data-kmd-section]").forEach((sec) => {
+    if (sec.getBoundingClientRect().top <= line) current = sec.getAttribute("data-kmd-section");
   });
-  const all = (collapse) => () => {
-    items.forEach(({ section }) => { setCollapsed(section, collapse); persist(section); });
-  };
-  const mk = (text, testid, title, fn) => {
-    const b = document.createElement("button");
-    b.type = "button"; b.className = "kmd-nav-tool"; b.textContent = text; b.title = title;
-    b.setAttribute("data-testid", testid); b.addEventListener("click", fn); return b;
-  };
-  nav.appendChild(mk("Collapse all", "kmd-collapse-all", "Collapse every section", all(true)));
-  nav.appendChild(mk("Expand all", "kmd-expand-all", "Expand every section", all(false)));
+  nav.querySelectorAll(".kmd-nav-item").forEach((chip) => {
+    const on = chip.getAttribute("data-kmd-for") === current;
+    if (on !== chip.hasAttribute("aria-current")) {
+      if (on) {
+        chip.setAttribute("aria-current", "true");
+        const nr = nav.getBoundingClientRect(), cr = chip.getBoundingClientRect();
+        if (cr.left < nr.left || cr.right > nr.right) nav.scrollTo({ left: chip.offsetLeft - 16, behavior: "smooth" });
+      } else chip.removeAttribute("aria-current");
+    }
+  });
 }
 
 function decorateDrawer() {
