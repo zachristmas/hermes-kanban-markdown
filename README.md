@@ -6,7 +6,27 @@ Full markdown rendering and clearer sections for the [Hermes Agent](https://gith
 
 The built-in drawer renders markdown with a small regex renderer: no numbered lists, tables or blockquotes, the language tag of a fenced block shows up as code, and there is no highlighting or copy button. Every section also runs into the next one. This plugin fixes both.
 
-![Task drawer with separated sections, numbered lists and highlighted code blocks](docs/drawer.png)
+### Before and after
+
+Same task, same data. Left is the stock drawer, right is with this plugin.
+
+<table>
+<tr><th align="center">Stock drawer</th><th align="center">With kanban-markdown</th></tr>
+<tr>
+<td><img src="docs/before-top.png" alt="Stock drawer: description with raw markdown, sections running together" width="400"></td>
+<td><img src="docs/after-top.png" alt="With the plugin: numbered lists, checkboxes, a table, section cards and a section navigator" width="400"></td>
+</tr>
+<tr>
+<td><img src="docs/before-comment.png" alt="Stock drawer: comment with code shown as plain text" width="400"></td>
+<td><img src="docs/after-comment.png" alt="With the plugin: highlighted code blocks with language labels and Copy buttons" width="400"></td>
+</tr>
+</table>
+
+### Collapse sections and jump between them
+
+Click any section header to fold it (remembered per browser). The bar at the top jumps straight to a section and opens it if it was folded.
+
+<img src="docs/nav-collapsed.png" alt="Dependencies and Attachments collapsed, navigator bar pinned to the top of the drawer" width="420">
 
 ## Features
 
