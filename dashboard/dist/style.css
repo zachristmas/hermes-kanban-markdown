@@ -116,27 +116,49 @@ html[data-kmd-theme="light"] {
 .hermes-kanban-drawer .hermes-kanban-section[data-kmd-collapsed] > .hermes-kanban-section-head,
 .hermes-kanban-drawer .hermes-kanban-section[data-kmd-collapsed] > .hermes-kanban-section-head-row { border-bottom-color: transparent !important; border-radius: 8px !important; }
 
-/* Section navigator: one sticky, horizontally scrollable row (compact on phones). */
-.kmd-nav {
-  position: sticky; top: -0.9rem; z-index: 5; margin: -0.9rem -0.9rem 0; padding: 0.45rem 0.9rem;
-  display: flex; flex-wrap: nowrap; gap: 0.4rem; align-items: center; flex: 0 0 auto;
-  overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -webkit-overflow-scrolling: touch;
-  overscroll-behavior-x: contain; scroll-snap-type: x proximity;
-  background: var(--color-background, #111); border-bottom: 1px solid var(--color-border);
+/* Section navigator: a tab row between the drawer header and the scrolling body.
+   It sits on the drawer's own surface (no background of its own) and only uses theme tokens. */
+.hermes-kanban-drawer > .kmd-nav {
+  flex: 0 0 auto; display: flex; align-items: stretch; gap: 0.25rem;
+  padding: 0 0.4rem 0 0.2rem; border-bottom: 1px solid var(--color-border);
 }
-.kmd-nav::-webkit-scrollbar { display: none; }
-.kmd-nav-item, .kmd-nav-tool {
-  flex: 0 0 auto; scroll-snap-align: start; font: inherit; font-size: 0.74rem; white-space: nowrap;
-  min-height: 2rem; padding: 0.2rem 0.75rem; border-radius: 999px; cursor: pointer; touch-action: manipulation;
-  color: var(--color-foreground); background: transparent; border: 1px solid var(--color-border);
+.kmd-nav-scroll {
+  flex: 1 1 auto; min-width: 0; display: flex; gap: 0.15rem; overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain;
+  padding: 0 0.4rem; scroll-padding: 0 1rem;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 0.6rem, #000 calc(100% - 1.4rem), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 0.6rem, #000 calc(100% - 1.4rem), transparent 100%);
 }
-.kmd-nav-item:hover, .kmd-nav-tool:hover { border-color: var(--color-ring); }
-.kmd-nav-item[aria-current] { border-color: var(--color-ring); background: color-mix(in srgb, var(--color-foreground) 12%, transparent); font-weight: 600; }
-.kmd-nav-tool { border-radius: 4px; color: var(--color-muted-foreground); margin-left: 0.25rem; }
-.hermes-kanban-drawer .hermes-kanban-drawer-body > .hermes-kanban-section { scroll-margin-top: 3.4rem; }
+.kmd-nav-scroll::-webkit-scrollbar { display: none; }
+.kmd-nav-item {
+  position: relative; flex: 0 0 auto; display: inline-flex; align-items: center; gap: 0.4rem;
+  font: inherit; font-size: 0.8rem; font-weight: 500; letter-spacing: 0.01em; white-space: nowrap;
+  padding: 0.7rem 0.6rem; margin: 0; background: transparent; border: 0; border-radius: 0; cursor: pointer;
+  color: var(--color-muted-foreground); touch-action: manipulation; transition: color 120ms ease;
+}
+.kmd-nav-item::after {
+  content: ""; position: absolute; left: 0.6rem; right: 0.6rem; bottom: -1px; height: 2px; border-radius: 2px 2px 0 0;
+  background: var(--color-primary, currentColor); transform: scaleX(0); transition: transform 160ms ease;
+}
+.kmd-nav-item:hover { color: var(--color-foreground); }
+.kmd-nav-item[aria-current] { color: var(--color-foreground); font-weight: 600; }
+.kmd-nav-item[aria-current]::after { transform: scaleX(1); }
+.kmd-nav-item:focus-visible, .kmd-nav-tool:focus-visible { outline: 2px solid var(--color-ring); outline-offset: -2px; border-radius: 4px; }
+.kmd-nav-count {
+  font-size: 0.68rem; font-weight: 600; line-height: 1; padding: 0.2rem 0.4rem; border-radius: 999px;
+  color: var(--color-muted-foreground);
+  background: color-mix(in srgb, var(--color-foreground) 10%, transparent);
+}
+.kmd-nav-tool {
+  flex: 0 0 auto; align-self: center; display: inline-flex; align-items: center; justify-content: center;
+  width: 2.25rem; height: 2.25rem; padding: 0; background: transparent; border: 0; border-radius: 8px; cursor: pointer;
+  color: var(--color-muted-foreground); touch-action: manipulation;
+}
+.kmd-nav-tool:hover { color: var(--color-foreground); background: color-mix(in srgb, var(--color-foreground) 8%, transparent); }
+.hermes-kanban-drawer .hermes-kanban-drawer-body > .hermes-kanban-section { scroll-margin-top: 0.4rem; }
 @media (max-width: 640px) {
-  .kmd-nav { padding: 0.4rem 0.9rem; }
-  .kmd-nav-item, .kmd-nav-tool { min-height: 2.6rem; font-size: 0.8rem; }
+  .kmd-nav-item { padding: 0.85rem 0.65rem; font-size: 0.85rem; }
+  .kmd-nav-tool { width: 2.6rem; height: 2.6rem; }
   /* larger tap target for folding on touch */
   .hermes-kanban-drawer .hermes-kanban-section[data-kmd-section] > .hermes-kanban-section-head,
   .hermes-kanban-drawer .hermes-kanban-section[data-kmd-section] > .hermes-kanban-section-head-row { min-height: 2.4rem; display: flex; align-items: center; }

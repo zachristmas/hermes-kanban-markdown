@@ -8,6 +8,8 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/kanban");
   await page.locator(`[data-task-id="${TASK}"]`).first().click();
   await page.locator('[data-testid="kmd-root"]').first().waitFor();
+  await page.locator('[data-testid="kmd-nav"]').waitFor();
+  await page.waitForTimeout(900); // the drawer re-renders once more as its data finishes loading; let it settle
 });
 
 test("numbered list, blockquote and table are rendered", async ({ page }) => {
@@ -97,15 +99,15 @@ test("section navigator jumps to a section, opens it if collapsed, and toggles a
   const nav = page.locator('[data-testid="kmd-nav"]');
   await expect(nav).toBeVisible();
   const all = nav.locator('[data-testid="kmd-toggle-all"]');
-  await expect(all).toHaveText("Collapse all");
+  await expect(all).toHaveAttribute("aria-label", "Collapse all");
   await all.click();
-  await expect(all).toHaveText("Expand all");
+  await expect(all).toHaveAttribute("aria-label", "Expand all");
   expect(await page.locator('[data-testid="kmd-section"][data-kmd-collapsed]').count()).toBe(await page.locator('[data-testid="kmd-section"]').count());
   await nav.locator('[data-testid="kmd-nav-item"]', { hasText: /^comments/i }).click();
   const comments = page.locator('[data-kmd-section="comments"]');
   await expect(comments).not.toHaveAttribute("data-kmd-collapsed", "");
   await expect(comments).toBeInViewport();
-  await expect(all).toHaveText("Collapse all"); // no longer all collapsed
+  await expect(all).toHaveAttribute("aria-label", "Collapse all"); // no longer all collapsed
   await all.click(); await all.click();
   expect(await page.locator('[data-testid="kmd-section"][data-kmd-collapsed]').count()).toBe(0);
 });
@@ -114,6 +116,8 @@ test("navigator is a single compact row and highlights the current section", asy
   const nav = page.locator('[data-testid="kmd-nav"]');
   const h = await nav.evaluate((e) => e.getBoundingClientRect().height);
   expect(h).toBeLessThan(64); // one row, not a wrapped block
+  // sits between the drawer header and the body, on the drawer surface (not a sticky overlay)
+  expect(await nav.evaluate((e) => e.nextElementSibling.classList.contains("hermes-kanban-drawer-body") && getComputedStyle(e).position === "static" && getComputedStyle(e).backgroundColor === "rgba(0, 0, 0, 0)")).toBe(true);
   await nav.locator('[data-testid="kmd-nav-item"]', { hasText: /^comments/i }).click();
   await expect(nav.locator('[data-kmd-for="comments"]')).toHaveAttribute("aria-current", "true", { timeout: 4000 });
 });
@@ -125,13 +129,12 @@ test.describe("phone", () => {
     await page.locator('[data-task-id="' + TASK + '"]').first().tap();
     const nav = page.locator('[data-testid="kmd-nav"]');
     await nav.waitFor();
-    const box = await nav.evaluate((e) => ({ h: e.getBoundingClientRect().height, sw: e.scrollWidth, cw: e.clientWidth }));
+    const box = await nav.locator('[data-testid="kmd-nav-scroll"]').evaluate((e) => ({ h: e.parentElement.getBoundingClientRect().height, sw: e.scrollWidth, cw: e.clientWidth }));
     expect(box.h).toBeLessThan(64);
     expect(box.sw).toBeGreaterThan(box.cw); // overflows horizontally instead of wrapping
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
     const chip = nav.locator('[data-testid="kmd-nav-item"]', { hasText: /^comments/i });
     expect((await chip.boundingBox()).height).toBeGreaterThanOrEqual(36); // touch-sized
-    await chip.scrollIntoViewIfNeeded();
     await chip.tap();
     await expect(page.locator('[data-kmd-section="comments"]')).toBeInViewport();
   });

@@ -24,9 +24,15 @@ Same task, same data. Left is the stock drawer, right is with this plugin.
 
 ### Collapse sections and jump between them
 
-Click any section header to fold it (remembered per browser). The bar at the top jumps straight to a section and opens it if it was folded.
+A tab row between the drawer header and the content: one tab per section with its count, the tab for the section you're reading is underlined, and a single button at the right folds or unfolds everything. It sits on the drawer's own surface and uses only theme colors, so it follows whatever dashboard theme you run.
 
-<img src="docs/nav-collapsed.png" alt="Dependencies and Attachments collapsed, navigator bar pinned to the top of the drawer" width="420">
+Click any section header to fold it (remembered per browser). A tab jumps straight to its section and opens it if it was folded.
+
+<img src="docs/nav-collapsed.png" alt="Section tab row under the drawer header, jumped to Comments" width="420">
+
+On a phone the tab row swipes sideways, keeps the current tab in view, and uses touch-sized targets:
+
+<img src="docs/mobile.png" alt="Phone-width flyout with the section tab row" width="260">
 
 ## Features
 
@@ -36,7 +42,7 @@ Click any section header to fold it (remembered per browser). The bar at the top
 - Palette follows the active dashboard theme (dark or light is detected from the real background).
 - Each drawer section (Description, Dependencies, Attachments, Result, Comments, ...) is a bordered card with its own header band, and comments are divided from each other.
 - Code blocks are capped at a reasonable height (22rem) and scroll; an **Expand** button appears only on blocks that are actually clipped.
-- Click a section header to collapse or expand it (remembered per browser). A sticky bar at the top of the drawer has a chip per section that jumps straight to it (opening it if collapsed), highlights the section you're currently in, and ends with a single **Collapse all / Expand all** toggle. It stays one compact, swipeable row on phones, with touch-sized targets.
+- Click a section header to collapse or expand it (remembered per browser). A tab row under the drawer header has one tab per section that jumps straight to it (opening it if collapsed), underlines the section you're in, and ends with a single **Collapse all / Expand all** button. It stays one swipeable row on phones, with touch-sized targets.
 - Safe by construction: raw HTML in task text is shown as literal text, only http, https and mailto links are active, and images are shown as links (never fetched automatically).
 - If the markdown source can't be read, the built-in rendering is left untouched.
 

@@ -189,18 +189,30 @@ document.addEventListener("keydown", (e) => {
 
 function allCollapsed(items) { return items.every(({ section }) => section.hasAttribute("data-kmd-collapsed")); }
 
+// Two stacked chevrons (collapse) / two spread chevrons (expand); currentColor so every theme works.
+const ICON_COLLAPSE = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4 3.5l4 3.5 4-3.5M4 12.5L8 9l4 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const ICON_EXPAND = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4 6.5L8 3l4 3.5M4 9.5L8 13l4-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
 function syncToggleAll(nav, items) {
   const btn = nav.querySelector('[data-testid="kmd-toggle-all"]');
   if (!btn) return;
   const collapsed = allCollapsed(items);
   const label = collapsed ? "Expand all" : "Collapse all";
-  if (btn.textContent !== label) btn.textContent = label;
-  btn.title = collapsed ? "Expand every section" : "Collapse every section";
+  if (btn.getAttribute("aria-label") !== label) {
+    btn.setAttribute("aria-label", label);
+    btn.title = label;
+    btn.setAttribute("data-state", collapsed ? "collapsed" : "expanded");
+    btn.innerHTML = collapsed ? ICON_EXPAND : ICON_COLLAPSE;
+  }
 }
 
+// The nav lives between the drawer header and the scrolling body, so it never overlaps
+// (or gets clipped by) anything the dashboard pins to the top of the screen.
 function buildNav(body, items) {
+  const drawer = body.closest(".hermes-kanban-drawer");
+  if (!drawer) return;
   const sig = items.map((i) => i.key + "|" + i.label).join("\n");
-  let nav = body.querySelector(":scope > .kmd-nav");
+  let nav = drawer.querySelector(":scope > .kmd-nav");
   if (!nav || nav.getAttribute("data-kmd-sig") !== sig) {
     if (!nav) {
       nav = document.createElement("div");
@@ -208,10 +220,13 @@ function buildNav(body, items) {
       nav.setAttribute("data-testid", "kmd-nav");
       nav.setAttribute("role", "navigation");
       nav.setAttribute("aria-label", "Task sections");
-      body.insertBefore(nav, body.firstChild);
+      body.parentElement.insertBefore(nav, body);
     }
     nav.setAttribute("data-kmd-sig", sig);
     nav.replaceChildren();
+    const scroller = document.createElement("div");
+    scroller.className = "kmd-nav-scroll";
+    scroller.setAttribute("data-testid", "kmd-nav-scroll");
     items.forEach(({ section, label, key }) => {
       const b = document.createElement("button");
       b.type = "button";
@@ -219,13 +234,17 @@ function buildNav(body, items) {
       b.setAttribute("data-testid", "kmd-nav-item");
       b.setAttribute("data-kmd-for", key);
       const m = label.match(/\((\d+)\)\s*$/);
-      b.textContent = label.replace(/\s*\(.*\)\s*$/, "") + (m ? " " + m[1] : "");
+      const name = document.createElement("span");
+      name.textContent = label.replace(/\s*\(.*\)\s*$/, "");
+      b.appendChild(name);
+      if (m) { const c = document.createElement("span"); c.className = "kmd-nav-count"; c.textContent = m[1]; b.appendChild(c); }
       b.addEventListener("click", () => {
         if (section.hasAttribute("data-kmd-collapsed")) { setCollapsed(section, false); persist(section); }
         section.scrollIntoView({ block: "start", behavior: "smooth" });
       });
-      nav.appendChild(b);
+      scroller.appendChild(b);
     });
+    nav.appendChild(scroller);
     const all = document.createElement("button");
     all.type = "button"; all.className = "kmd-nav-tool"; all.setAttribute("data-testid", "kmd-toggle-all");
     all.addEventListener("click", () => {
@@ -248,23 +267,25 @@ function buildNav(body, items) {
   spy(body);
 }
 
-// Highlight the nav chip for the section currently at the top of the drawer and keep it in view.
+// Mark the tab for the section at the top of the drawer and keep it visible in the tab row.
 function spy(body) {
-  const nav = body.querySelector(":scope > .kmd-nav");
-  if (!nav) return;
-  const line = body.getBoundingClientRect().top + nav.offsetHeight + 24;
-  let current = null;
-  body.querySelectorAll(":scope > .hermes-kanban-section[data-kmd-section]").forEach((sec) => {
+  const drawer = body.closest(".hermes-kanban-drawer");
+  const scroller = drawer && drawer.querySelector(":scope > .kmd-nav > .kmd-nav-scroll");
+  if (!scroller) return;
+  const line = body.getBoundingClientRect().top + 32;
+  const secs = body.querySelectorAll(":scope > .hermes-kanban-section[data-kmd-section]");
+  let current = secs.length ? secs[0].getAttribute("data-kmd-section") : null; // first tab until you scroll past it
+  secs.forEach((sec) => {
     if (sec.getBoundingClientRect().top <= line) current = sec.getAttribute("data-kmd-section");
   });
-  nav.querySelectorAll(".kmd-nav-item").forEach((chip) => {
+  scroller.querySelectorAll(".kmd-nav-item").forEach((chip) => {
     const on = chip.getAttribute("data-kmd-for") === current;
-    if (on !== chip.hasAttribute("aria-current")) {
-      if (on) {
-        chip.setAttribute("aria-current", "true");
-        const nr = nav.getBoundingClientRect(), cr = chip.getBoundingClientRect();
-        if (cr.left < nr.left || cr.right > nr.right) nav.scrollTo({ left: chip.offsetLeft - 16, behavior: "smooth" });
-      } else chip.removeAttribute("aria-current");
+    if (on === chip.hasAttribute("aria-current")) return;
+    if (!on) { chip.removeAttribute("aria-current"); return; }
+    chip.setAttribute("aria-current", "true");
+    const sr = scroller.getBoundingClientRect(), cr = chip.getBoundingClientRect();
+    if (cr.left < sr.left + 12 || cr.right > sr.right - 12) {
+      scroller.scrollTo({ left: Math.max(0, chip.offsetLeft - scroller.clientWidth / 2 + chip.clientWidth / 2), behavior: "smooth" });
     }
   });
 }
@@ -273,6 +294,10 @@ function decorateDrawer() {
   document.querySelectorAll(".hermes-kanban-drawer .hermes-kanban-drawer-body").forEach((body) => {
     const items = decorateSections(body);
     if (items.length > 1) buildNav(body, items);
+    else {
+      const stale = body.closest(".hermes-kanban-drawer")?.querySelector(":scope > .kmd-nav");
+      if (stale) stale.remove();
+    }
   });
 }
 
@@ -280,6 +305,7 @@ let scheduled = false;
 function run() {
   scheduled = false;
   document.querySelectorAll(MD).forEach(upgrade);
+  measureCode(document); // layout can settle after the first render (drawer animation, font load)
   decorateDrawer();
   syncTheme();
 }
@@ -291,5 +317,7 @@ function schedule() {
 
 new MutationObserver(schedule).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style", "data-theme"] });
 schedule();
+window.addEventListener("resize", schedule);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(schedule);
 
 window.__HERMES_PLUGINS__.register("kanban-markdown", () => null);
